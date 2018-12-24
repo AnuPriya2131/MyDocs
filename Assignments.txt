@@ -1,0 +1,133 @@
+
+
+
+
+1.   Write a powershell script to ping google and save report onto local computer in .csv format
+        Test-Connection -ComputerName google.com | Out-File C:\output.csv
+      
+ 2.   Write powershell script to take a snapshot of a VM
+
+$resourceGroupName = 'RG' 
+$location = 'East US' 
+$vmName = 'myvm'
+$snapshotName = 'mySnapshot'
+$vm = get-azvm -ResourceGroupName $resourceGroupName -Name $vmName
+$snapshot =  New-AzSnapshotConfig -SourceUri $vm.StorageProfile.OsDisk.ManagedDisk.Id -Location $location -CreateOption copy
+New-AzSnapshot -Snapshot $snapshot -SnapshotName $snapshotName -ResourceGroupName $resourceGroupName 
+
+3.  Write powershell script to get list of all VM in Azure and send email 
+
+Get-AzVM
+$From = "anu.priya@globant.com"
+$To = "anu.priya@globant.com"
+$Attachment = "C:\Users\anu.priya\Serverlist.txt"
+$Subject = "VM details"
+$SMTPServer = "smtp.gmail.com"
+$smtpport = "587"
+$Body = "Please find the vm details in the attachment"
+Send-MailMessage -From $From -To $To -Subject $Subject -Body $Body -SmtpServer $SMTPServer -Port $smtpport -UseSsl -Credential (Get-Credential) -Attachments $Attachment -DeliveryNotificationOption OnSuccess
+
+ 
+4.  Write powershell script to rest VM's admin password.
+
+$SubID = "a270502c-a313-461c-a021-981a9ea997e1"
+$resourceGroupName = "RG"
+$vmName = "myvm"
+$location = "East US"
+Connect-AzAccount 
+Select-AzSubscription -Subscription $SubID 
+Set-AzVMAccessExtension -ResourceGroupName $resourceGroupName -Location $location -VMName $vmName -Credential (Get-Credential) -TypeHandlerVersion "2.0" -Name VMaccess
+ 
+5.  Write powershell script to stop all VMs in a resource group of a subscription
+
+ Get-AzVM -ResourceGroupName "RG" | foreach {Stop-AzVM -Name $_.Name -ResourceGroupName RG -Confirm:$false} 
+
+6.  Write a powershell script to get top 10 process utilizing server Memory and CPU
+
+ Invoke-Command -scriptblock {Get-Process | Sort CPU -descending | Select -first 5 } 
+
+7.  Write a powershell script to get logs entries' of a VM on Azure between a specified start and end time
+
+ Get-AzLog -ResourceGroupName "RG" -StartTime ("2018-12-20 14:46:42")  -EndTime ("2018-12-20 16:46:42") 
+
+
+8.   Write a powershell script to get the Windows Patches Status from 2 VMs on Azure.
+
+ $Computers = Get-Content C:\Users\anu.priya\Desktop\Script\Computers.txt
+
+$Results = foreach( $Computer in $Computers) {
+
+Write-Host "Processing Server $Computer"
+
+Get-WmiObject -Class Win32_Product -ComputerName $Computer | select _SERVER, Name, Version -ErrorAction SilentlyContinue
+}
+
+$Results | Export-Csv -Path C:\Users\anu.priya\Desktop\Script\Patches.csv
+
+
+
+
+9.  Write a powershell script to collect Information like CPU,Memory,and OS information and export it to .CSV.
+
+
+10.   Write a powershell script to collect Information of 2 VMs on Aure- Name,IPV4 Address,Canonical Name,Operating System,Operating SystemService Pack,Operating SyestemVersion,LastLogonDate and PasswordLast set.
+
+
+
+ $testcomputers = Get-Content -Path "C:\Users\anu.priya\Desktop\Script\Computers.txt"
+
+$exportLocation = "C:\Users\anu.priya\Desktop\Script\output.csv"
+
+foreach ($Computers in $testcomputers) {
+  if(Test-Connection -ComputerName -$Computers -Quiet -Count 2){
+  Add-Content -Value $Computers -Path C:\Users\anu.priya\Desktop\Script\deadPCs.txt.txt}
+  else{Add-Content -Value $Computers -Path C:\Users\anu.priya\Desktop\Script\livePCs.txt.txt }
+  }
+
+  $Computer = Get-Content -Path "C:\Users\anu.priya\Desktop\Script\livePCs.txt.txt"
+  Foreach($Computers in $Computer) {
+  $Bios = Get-WmiObject Win32_bios -ComputerName $Computers
+  $Hardware = Get-WmiObject Win32_computerSystem -ComputerName $Computers
+  $Sysbuild = Get-WmiObject Win32_WmiSetting -ComputerName $Computers
+  $OS = Get-WmiObject Win32_OperatingSystem -ComputerName $Computers
+  $Networks = Get-WmiObject Win32_NetworkAdapterConfiguration -ComputerName $Computers | Where-Object ($_.IPEnabled)
+  $DriveSpace = Get-WmiObject Win32_volume -ComputerName $Computers 
+  $cpu = Get-WmiObject Win32_Processor -ComputerName $Computers
+  $username = Get-ChildItem "\\$Computers\c$\Users" | Sort-Object Lastwritetime -Descending | Select-Object Name, Lastwritetime
+  $totalMemory = [math]::Round($Hardware.TotalPhysicalMemory/1024/1024/1024,2)
+  $lastboot = $OS.ConvertToDateTime($OS.LastBootUpTime)
+
+  $IPAddress = $Networks.TpAddress[0]
+  $MACAddress = $Networks.MACAddress
+  $systemBios = $Bios.serialnumber
+
+
+  $Outputobj = New-Object -TypeName PSObject
+  $Outputobj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $Computers.ToUpper()
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Manufacturer -Value $Hardware.Manufacturer
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Model -Value $Hardware.Model
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Processor_Type -Value $cpu.Name
+  $Outputobj | Add-Member -MemberType NoteProperty -Name system_Type -Value $Hardware.SystemType
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Operating_System -Value $OS.Caption
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Operating_System_Version -Value $OS.Version
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Operating_System_BuildVersion -Value $Sysbuild.BuildVersion
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Serial_Number -Value $systemBios
+  $Outputobj | Add-Member -MemberType NoteProperty -Name IP_Address -Value $IPAddress
+  $Outputobj | Add-Member -MemberType NoteProperty -Name MAC_Address -Value $MACAddress
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Last_User -Value $username.Name
+  $Outputobj | Add-Member -MemberType NoteProperty -Name User_Last_Login -Value $username.LastWriteTime
+  $Outputobj | Add-Member -MemberType NoteProperty -Name C:_FressSpace_GB -Value $DriveSpace.GBfreespace
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Total_Memory_GB -Value $totalMemory
+  $Outputobj | Add-Member -MemberType NoteProperty -Name Last_Reboot -Value $lastboot
+
+  $Outputobj | Export-Csv -Path C:\Users\anu.priya\Desktop\Script\output.csv -Append -NoTypeInformation
+  
+  
+  } 
+
+ 
+
+
+ 
+ 
+ 
