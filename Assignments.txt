@@ -3,6 +3,7 @@
 
 
 1.   Write a powershell script to ping google and save report onto local computer in .csv format
+
         Test-Connection -ComputerName google.com | Out-File C:\output.csv
       
  2.   Write powershell script to take a snapshot of a VM
@@ -126,8 +127,59 @@ foreach ($Computers in $testcomputers) {
   } 
 
  
+11. Write a powershell script to check if RDP is enabled on a VM
 
+12. Write a powershell script to monitor availability of a website. This might need an installation of IIS server in a VM on Azure
 
+ function Show-MessageBox ($title, $msg) {     
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null 
+[Windows.Forms.MessageBox]::Show($msg, $title, [Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning, [System.Windows.Forms.MessageBoxDefaultButton]::Button1, [System.Windows.Forms.MessageBoxOptions]::DefaultDesktopOnly) | Out-Null     
+} 
+
+[string] $url = 'https://technet.microsoft.com/'
+
+[net.httpWebRequest] $req = [net.webRequest]::create($url)
+$req.Method = "HEAD"
+
+[net.httpWebResponse] $res = $req.getResponse()
+
+if ($res.StatusCode -ge "200") {
+  write-host "`nSite up`n" `
+    -foregroundcolor green
+}
+else {
+  Show-MessageBox -title "Warning!" -msg "Site down!!!"
+  write-host "`nSite down`n" `
+    -foregroundcolor red
+} 
+
+13.  Write a powershell script get the list of Active & Inactive user list from Azure AD.
  
+$Users = Get-ADUser -Filter { Members -notlike "*" } -SearchBase "OU=OU_globant,DC=Globant,DC=net" | Select-Object Name, GroupCategory, DistinguishedName
+# Delete Inactive Users
+ForEach ($Item in $Users){
+  Remove-ADUser -Identity $Item.DistinguishedName -Confirm:$false
+  Write-Output "$($Item.Name) - Deleted"
+} 
+
+14.  Write a powershell script to find empty security groups in AD and delete them
+
+ $Groups = Get-ADGroup -Filter { Members -notlike "*" } -SearchBase "OU=OU_globant,DC=Globant,DC=net" | Select-Object Name, GroupCategory, DistinguishedName
+# Delete Inactive Groups
+ForEach ($Item in $Groups){
+  Remove-ADGroup -Identity $Item.DistinguishedName -Confirm:$false
+  Write-Output "$($Item.Name) - Deleted"
+}
+
+15.  Write powershell script to disable firewall of all VMs in a resource group
+
+$Computers = Get-Content C:\Users\anu.priya\Desktop\Script\Computers.txt
+foreach( $Computer in $Computers) 
+{
+Write-Host "Processing Server $Computer"
+netsh advfirewall set allprofiles state off
+}
+ 
+
  
  
