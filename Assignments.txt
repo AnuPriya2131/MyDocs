@@ -1,7 +1,5 @@
 
 
-
-
 1.   Write a powershell script to ping google and save report onto local computer in .csv format
 
         Test-Connection -ComputerName google.com | Out-File C:\output.csv
@@ -128,6 +126,25 @@ foreach ($Computers in $testcomputers) {
 
  
 11. Write a powershell script to check if RDP is enabled on a VM
+
+
+Invoke-AzVMRunCommand -ResourceGroupName RG -Name myvm -CommandId 'RunPowerShellScript' -ScriptPath 'C:\Users\anu.priya\Documents\RDP_Enabled.ps1'
+
+# Copy the scriptpath
+
+Function Get-RemoteDesktopConfig
+{if ((Get-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server').fDenyTSConnections -eq 0)
+
+          {Write-host "RDP is Enabled" -ForegroundColor Green}
+
+ elseif ((Get-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp').UserAuthentication -eq 1)
+         {Write-Host "RDP is Disabled" -ForegroundColor Red} 
+
+ #else     {"All Connections allowed"}
+
+} 
+Get-RemoteDesktopConfig
+
 
 12. Write a powershell script to monitor availability of a website. This might need an installation of IIS server in a VM on Azure
 
