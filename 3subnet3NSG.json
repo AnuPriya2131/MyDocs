@@ -1,0 +1,274 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "ARMVNet",
+      "metadata": {
+        "description": "This is your Virtual Network"
+      }
+    },
+    "addressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/26",
+      "metadata": {
+        "description": "The CIDR address space for your Virtual Network in Azure"
+      }
+    },
+    "PubSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/28",
+      "metadata": {
+        "description": "This is CIDR prefix for the Public Subnet"
+      }
+    },
+    "ADSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.16/28",
+      "metadata": {
+        "description": "This is CIDR prefix for the AD Subnet"
+      }
+    },
+    "ToolsSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.32/28",
+      "metadata": {
+        "description": "This is CIDR prefix for the Tools Subnet"
+      }
+    },
+    "PubNSGName": {
+      "type": "string",
+      "defaultValue": "Pub_NSG",
+      "metadata": {
+        "description": "This is name of the networkSecurityGroup that will be assigned to Public Subnet"
+      }
+    },
+    "ADNSGName": {
+      "type": "string",
+      "defaultValue": "AD_NSG",
+      "metadata": {
+        "description": "This is name of the networkSecurityGroup that will be assigned to AD Subnet"
+      }
+    },
+    "ToolsNSGName": {
+      "type": "string",
+      "defaultValue": "Tools_NSG",
+      "metadata": {
+        "description": "This is name of the networkSecurityGroup that will be assigned to Tools Subnet"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('PubNSGName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "rdp_rule",
+            "properties": {
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "web_rule",
+            "properties": {
+              "description": "Allow WEB",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('ADNSGName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow_Pub",
+            "properties": {
+              "description": "Allow Pub Subnet",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "[parameters('PubSubnetPrefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Block_RDP_Internet",
+            "properties": {
+              "description": "Block RDP",
+              "protocol": "tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Block_Internet_Outbound",
+            "properties": {
+              "description": "Block Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Deny",
+              "priority": 200,
+              "direction": "Outbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('ToolsNSGName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow_AD",
+            "properties": {
+              "description": "Allow AD Subnet",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1433",
+              "sourceAddressPrefix": "[parameters('ADSubnetPrefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Block_Pub",
+            "properties": {
+              "description": "Block Pub Subnet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('PubSubnetPrefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Block_AD",
+            "properties": {
+              "description": "Block AD Subnet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('ADSubnetPrefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Block_Internet",
+            "properties": {
+              "description": "Block Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Deny",
+              "priority": 200,
+              "direction": "Outbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkSecurityGroups/', parameters('PubNSGName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', parameters('ADNSGName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', parameters('ToolsNSGName'))]"
+      ],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "PubSubnet",
+            "properties": {
+              "addressPrefix": "[parameters('PubSubnetPrefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('PubNSGName'))]"
+              }
+            }
+          },
+          {
+            "name": "ADSubnet",
+            "properties": {
+              "addressPrefix": "[parameters('ADSubnetPrefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('ADNSGName'))]"
+              }
+            }
+          },
+          {
+            "name": "ToolsSubnet",
+            "properties": {
+              "addressPrefix": "[parameters('ToolsSubnetPrefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('ToolsNSGName'))]"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
