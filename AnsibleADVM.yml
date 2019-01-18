@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Create Azure Deploy
+      azure_rm_deployment:
+        state: present
+        subscription_id: 00f85624-1f84-4729-8adf-06c4c42ff6fb
+        resource_group_name: sample
+        template_link: 'C:\Users\anu.priya\Desktop\1VM.json'
+
+    
